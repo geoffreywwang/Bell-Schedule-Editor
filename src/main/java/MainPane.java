@@ -194,7 +194,9 @@ public class MainPane extends VBox {
         this.getChildren().add(buttons);
 
         //Checks if the program is connected to the internet. If not display a message
-        snackbar.show("Please check your internet connection before proceeding!", 8000);
+        if (!isConnected) {
+            snackbar.show("Please check your internet connection before proceeding!", 8000);
+        }
     }
 
     /**
