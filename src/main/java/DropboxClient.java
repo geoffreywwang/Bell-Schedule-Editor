@@ -1,5 +1,6 @@
 import com.dropbox.core.DbxException;
 import com.dropbox.core.DbxRequestConfig;
+import com.dropbox.core.NetworkIOException;
 import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.WriteMode;
@@ -36,6 +37,8 @@ public class DropboxClient {
     public void uploadFile(String currentFileLocation, String targetFileName) throws DbxException, IOException {
         try (InputStream in = new FileInputStream(currentFileLocation)) {
             FileMetadata metadata = client.files().uploadBuilder("/" + targetFileName).withMode(WriteMode.OVERWRITE).uploadAndFinish(in);
+        } catch (NetworkIOException e) {
+            throw e;
         }
     }
 }

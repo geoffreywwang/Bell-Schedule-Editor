@@ -3,7 +3,9 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -43,9 +45,9 @@ public class Main extends Application {
         }
 
         //Directs all errors to print to the error log instead of in console
-        FileOutputStream fos = new FileOutputStream(file);
-        PrintStream ps = new PrintStream(fos);
-        System.setErr(ps);
+//        FileOutputStream fos = new FileOutputStream(file);
+//        PrintStream ps = new PrintStream(fos);
+//        System.setErr(ps);
 
         //Creates Keys folder to store API keys if it doesn't already exist
         File keys = new File("Keys");
@@ -61,20 +63,31 @@ public class Main extends Application {
             e.printStackTrace();
         }
 
-        //Grab the server version of BellTimes.txt
+        //Grab the server version of BellTimes.txt and test connection
+        boolean isConnected = false;
+        InputStream in = null;
         try {
             URL website = new URL(URL);
-            InputStream in = website.openStream();
+            in = website.openStream();
             if (!(in == null)) {
                 Files.copy(in, Paths.get("BellTimes.txt"), StandardCopyOption.REPLACE_EXISTING);
-                in.close();
             }
+            isConnected = true;
         } catch (Exception e) {
             e.printStackTrace();
+            isConnected = false;
+        } finally {
+            try {
+                if (in != null) {
+                    in.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
-        //Set up mainPane (main content in the window)
-        MainPane mainPane = new MainPane();
+        //Set up mainPane (main content in the window) and pass in connection status
+        MainPane mainPane = new MainPane(isConnected);
         mainPane.setPadding(new Insets(10));
 
         //Create a scene and populate it with mainPane

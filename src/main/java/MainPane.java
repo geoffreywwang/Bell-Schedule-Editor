@@ -35,7 +35,7 @@ public class MainPane extends VBox {
     /**
      * Sets up pane and initializes everything
      */
-    public MainPane() {
+    public MainPane(boolean isConnected) {
 
         //General Pane Settings
         this.setSpacing(5);
@@ -64,7 +64,6 @@ public class MainPane extends VBox {
         hBox.setSpacing(10);
         this.getChildren().add(hBox);
 
-
         //Initialize the scrollPaneContent
         scrollPaneContent = new VBox();
         scrollPaneContent.setSpacing(5);
@@ -79,6 +78,9 @@ public class MainPane extends VBox {
         scrollPane.setId("scrollPane");
         this.getChildren().add(scrollPane);
 
+        //Create the button dropdown
+        JFXNodesList buttons = new JFXNodesList();
+
         //Create the default save button
         JFXButton submitButton = new JFXButton("Save...");
         submitButton.setPrefWidth(150);
@@ -89,6 +91,7 @@ public class MainPane extends VBox {
         createLocalButton.setButtonType(JFXButton.ButtonType.RAISED);
         createLocalButton.getStyleClass().addAll("unselectedButton");
         createLocalButton.setOnMouseClicked(event -> {
+            buttons.animateList();
             if (saveData()) {
                 snackbar.show("Saved successful, check your Documents folder!", 2000);
             }
@@ -99,6 +102,7 @@ public class MainPane extends VBox {
         createRemoteButton.setButtonType(JFXButton.ButtonType.RAISED);
         createRemoteButton.getStyleClass().addAll("unselectedButton");
         createRemoteButton.setOnMouseClicked(event -> {
+            buttons.animateList();
             if (!this.getChildren().contains(apiKeyField)) {
                 try {
                     String apiKey = KeyTool.getAPIKey();
@@ -108,8 +112,14 @@ public class MainPane extends VBox {
                         throw new FileNotFoundException();
                     }
                     if (saveData()) {
-                        uploadToDropbox("BellTimes.txt", "BellTimes.txt");
-                        snackbar.show("Upload successful!", 1000);
+                        try {
+                            if (!uploadToDropbox("BellTimes.txt", "BellTimes.txt")) {
+                                throw new Exception();
+                            }
+                            snackbar.show("Upload successful!", 1000);
+                        } catch (Exception e) {
+                            snackbar.show("Error: Please check your internet connection...", 5000);
+                        }
                     }
                 } catch (FileNotFoundException e) {
                     initiateAPIKeyField();
@@ -125,6 +135,7 @@ public class MainPane extends VBox {
         clearServerButton.setButtonType(JFXButton.ButtonType.RAISED);
         clearServerButton.getStyleClass().addAll("unselectedButton");
         clearServerButton.setOnMouseClicked(event -> {
+            buttons.animateList();
             if (!this.getChildren().contains(apiKeyField)) {
                 //Make the BellTimes.txt empty
                 FileWriter fw = null;
@@ -155,8 +166,14 @@ public class MainPane extends VBox {
                     } else if (apiKey.length() < 10) {
                         throw new FileNotFoundException();
                     }
-                    uploadToDropbox("BellTimes.txt", "BellTimes.txt");
-                    snackbar.show("Clear successful!", 1000);
+                    try {
+                        if (!uploadToDropbox("BellTimes.txt", "BellTimes.txt")) {
+                            throw new Exception();
+                        }
+                        snackbar.show("Clear successful!", 1000);
+                    } catch (Exception e) {
+                        snackbar.show("Error: Please check your internet connection...", 5000);
+                    }
                 } catch (FileNotFoundException e) {
                     initiateAPIKeyField();
                     snackbar.show("Please supply API key and try again...", 1000);
@@ -167,7 +184,6 @@ public class MainPane extends VBox {
         });
 
         //Set up the save button dropdown
-        JFXNodesList buttons = new JFXNodesList();
         buttons.setSpacing(5);
         buttons.addAnimatedNode(submitButton);
         buttons.addAnimatedNode(createLocalButton);
@@ -176,6 +192,9 @@ public class MainPane extends VBox {
 
         //Add the save button dropdown to the node
         this.getChildren().add(buttons);
+
+        //Checks if the program is connected to the internet. If not display a message
+        snackbar.show("Please check your internet connection before proceeding!", 8000);
     }
 
     /**
@@ -291,15 +310,18 @@ public class MainPane extends VBox {
      * @param currentFileLocation Location of the file one wants to upload
      * @param targetFileName      Name of file on Dropbox
      */
-    public void uploadToDropbox(String currentFileLocation, String targetFileName) {
+    public boolean uploadToDropbox(String currentFileLocation, String targetFileName) {
+        boolean connectionSuccessful = false;
         try {
             DropboxClient client = new DropboxClient(KeyTool.getAPIKey());
             client.uploadFile(currentFileLocation, targetFileName);
+            connectionSuccessful = true;
         } catch (Exception e) {
             snackbar.show("Error uploading to server!", 2000);
             snackbar.show("Please check your wifi or try uploading manually", 2000);
             e.printStackTrace();
         }
+        return connectionSuccessful;
     }
 
     /**
