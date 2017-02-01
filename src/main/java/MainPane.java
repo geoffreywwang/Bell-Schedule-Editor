@@ -155,10 +155,8 @@ public class MainPane extends VBox {
                     } else if (apiKey.length() < 10) {
                         throw new FileNotFoundException();
                     }
-                    if (saveData()) {
-                        uploadToDropbox("BellTimes.txt", "BellTimes.txt");
-                        snackbar.show("Clear successful!", 1000);
-                    }
+                    uploadToDropbox("BellTimes.txt", "BellTimes.txt");
+                    snackbar.show("Clear successful!", 1000);
                 } catch (FileNotFoundException e) {
                     initiateAPIKeyField();
                     snackbar.show("Please supply API key and try again...", 1000);
