@@ -1,118 +1,207 @@
-import com.jfoenix.controls.JFXButton;
-import com.jfoenix.controls.JFXDatePicker;
-import com.jfoenix.controls.JFXSnackbar;
-import com.jfoenix.controls.JFXTextField;
+import com.jfoenix.controls.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+
 /**
- * Created by geoffrey_wang on 1/30/17.
+ * Main Content of the window
  */
 public class MainPane extends VBox {
 
-    private ScrollPane scrollPane;
+    //Used for the extra info
     private JFXDatePicker datePicker;
-    private VBox vBox;
-    private JFXTextField titleField;
+    private JFXTextField titleField, apiKeyField;
 
-    public MainPane(){
-        //Main Pane Settings
+    //Used for the scroll pane
+    private ScrollPane scrollPane;
+    private VBox scrollPaneContent;
+
+    private JFXSnackbar snackbar;
+
+    /**
+     * Sets up pane and initializes everything
+     */
+    public MainPane() {
+
+        //General Pane Settings
         this.setSpacing(5);
         this.setAlignment(Pos.CENTER);
 
-        //Adding the Date Picker to the pane
-        datePicker = new JFXDatePicker();
-        this.getChildren().setAll(datePicker);
+        //Create a snackbar to display messages
+        snackbar = new JFXSnackbar(this);
 
-        //Adding the "add line button"
+        //Add the Title Field to the pane
+        titleField = new JFXTextField();
+        titleField.setPromptText("Title");
+
+        //Add the Date Picker to the pane
+        datePicker = new JFXDatePicker();
+
+        //Add the Add Line Button
         JFXButton addLineButton = new JFXButton("+");
         addLineButton.setId("addButton");
         addLineButton.setOnMouseClicked(event -> {
             addLine();
         });
 
-        titleField = new JFXTextField();
-        titleField.setPromptText("Title");
-
-        //Putting the add line button and the date picker in the same row
-        HBox hBox = new HBox(titleField,datePicker,addLineButton);
+        //Enclose the titleField, datePicker, and addLineButton in one row
+        HBox hBox = new HBox(titleField, datePicker, addLineButton);
         hBox.setAlignment(Pos.CENTER);
         hBox.setSpacing(10);
         this.getChildren().add(hBox);
 
-        //Initializing the vBox
-        vBox = new VBox();
-        vBox.setSpacing(5);
-        vBox.setAlignment(Pos.TOP_CENTER);
-        vBox.setPadding(new Insets(5,0,0,0));
-        vBox.setId("scrollPane");
 
-        //Initializing the scrollPane
-        scrollPane = new ScrollPane(vBox);
+        //Initialize the scrollPaneContent
+        scrollPaneContent = new VBox();
+        scrollPaneContent.setSpacing(5);
+        scrollPaneContent.setAlignment(Pos.TOP_CENTER);
+        scrollPaneContent.setPadding(new Insets(5, 0, 0, 0));
+        scrollPaneContent.setId("scrollPane");
+
+        //Initialize the scrollPane
+        scrollPane = new ScrollPane(scrollPaneContent);
         this.setVgrow(scrollPane, Priority.ALWAYS);
         scrollPane.setFitToWidth(true);
         scrollPane.setId("scrollPane");
         this.getChildren().add(scrollPane);
 
-
-        //Adding the submit button to the bottom
-        JFXButton submitButton = new JFXButton("Submit");
-        submitButton.setOnMouseClicked(event -> {
-            saveData();
-        });
+        //Create the submit button
+        JFXButton submitButton = new JFXButton("Save...");
+        submitButton.setPrefWidth(150);
         submitButton.setId("submitButton");
-        this.getChildren().add(submitButton);
+
+        JFXButton createLocalButton = new JFXButton("Save as local file");
+        createLocalButton.setButtonType(JFXButton.ButtonType.RAISED);
+        createLocalButton.getStyleClass().addAll("unselectedButton");
+        createLocalButton.setOnMouseClicked(event -> {
+            if (saveData()) {
+                snackbar.show("Saved successful, check your Documents folder!", 2000);
+            }
+        });
+
+        JFXButton createRemoteButton = new JFXButton("Save to server");
+        createRemoteButton.setButtonType(JFXButton.ButtonType.RAISED);
+        createRemoteButton.getStyleClass().addAll("unselectedButton");
+        createRemoteButton.setOnMouseClicked(event -> {
+            try {
+                String apiKey = KeyTool.getAPIKey();
+                if (apiKey == null) {
+                    throw new FileNotFoundException();
+                } else if (apiKey.length() < 10) {
+                    throw new FileNotFoundException();
+                }
+                if (saveData()) {
+                    uploadToDropbox("BellTimes.txt", "BellTimes.txt");
+                    snackbar.show("Upload successful!", 1000);
+                }
+            } catch (FileNotFoundException e) {
+                initiateAPIKeyField();
+                snackbar.show("Please supply API key and try again...", 1000);
+            }
+
+        });
+
+        JFXButton clearServerButton = new JFXButton("Clear Server");
+        clearServerButton.setButtonType(JFXButton.ButtonType.RAISED);
+        clearServerButton.getStyleClass().addAll("unselectedButton");
+        clearServerButton.setOnMouseClicked(event -> {
+            FileWriter fw = null;
+            BufferedWriter bw = null;
+
+            try {
+                fw = new FileWriter("BellTimes.txt");
+                bw = new BufferedWriter(fw);
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    if (bw != null)
+                        bw.close();
+                    if (fw != null)
+                        fw.close();
+
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+
+                }
+            }
+
+            try {
+                String apiKey = KeyTool.getAPIKey();
+                if (apiKey == null) {
+                    throw new FileNotFoundException();
+                } else if (apiKey.length() < 10) {
+                    throw new FileNotFoundException();
+                }
+                if (saveData()) {
+                    uploadToDropbox("BellTimes.txt", "BellTimes.txt");
+                    snackbar.show("Clear successful!", 1000);
+                }
+            } catch (FileNotFoundException e) {
+                initiateAPIKeyField();
+                snackbar.show("Please supply API key and try again...", 1000);
+            }
+        });
+
+        JFXNodesList buttons = new JFXNodesList();
+        buttons.setSpacing(5);
+        buttons.addAnimatedNode(submitButton);
+        buttons.addAnimatedNode(createLocalButton);
+        buttons.addAnimatedNode(createRemoteButton);
+        buttons.addAnimatedNode(clearServerButton);
+
+
+        this.getChildren().add(buttons);
     }
 
-    private void addLine(){
+    private void addLine() {
         JFXButton killButton = new JFXButton("-");
         killButton.setId("removeButton");
 
         ScheduleLine line = new ScheduleLine(killButton);
         line.getStyleClass().add("scheduleLine");
         killButton.setOnMouseClicked(event -> {
-            vBox.getChildren().remove(line);
+            scrollPaneContent.getChildren().remove(line);
         });
-        vBox.getChildren().add(line);
+        scrollPaneContent.getChildren().add(line);
     }
 
-    public boolean saveData(){
-        JFXSnackbar snackbar = new JFXSnackbar(this);
+    public boolean saveData() {
         List<String> lines = new ArrayList<>();
 
-        if(titleField.getText() == null|| titleField.getText().equals("")){
-            snackbar.show("Error! Please enter a title!",2000);
+        if (titleField.getText() == null || titleField.getText().equals("")) {
+            snackbar.show("Error! Please enter a title!", 2000);
             return false;
         }
 
-        if(datePicker.getValue() == null){
-            snackbar.show("Error! Please enter a date!",2000);
+        if (datePicker.getValue() == null) {
+            snackbar.show("Error! Please enter a date!", 2000);
             return false;
         }
 
         lines.add(datePicker.getValue().getMonth().getValue() + "");
         lines.add(datePicker.getValue().getDayOfMonth() + "");
         lines.add(datePicker.getValue().getYear() + "");
-        lines.add(vBox.getChildren().size()+2 + "");
+        lines.add(scrollPaneContent.getChildren().size() + 2 + "");
 
         lines.add(titleField.getText() + " ");
         lines.add("---------------");
 
 
-        for(Node node: vBox.getChildren()){
+        for (Node node : scrollPaneContent.getChildren()) {
             ScheduleLine temp = (ScheduleLine) node;
             lines.add(temp.getBlockData());
         }
@@ -120,28 +209,80 @@ public class MainPane extends VBox {
         lines.add(datePicker.getValue().toString());
         lines.add("---------------");
 
-        for(Node node: vBox.getChildren()){
+        for (Node node : scrollPaneContent.getChildren()) {
             ScheduleLine temp = (ScheduleLine) node;
             lines.add(temp.getExtraData());
         }
 
         String home = System.getenv("HOME");
 
-        File documents = new File(home+"/Documents/WHS Bell Schedule Output");
+        File documents = new File(home + "/Documents/WHS Bell Schedule Editor");
 
-        if(!documents.exists())
-        {
+        if (!documents.exists()) {
             documents.mkdir();
         }
 
-        java.nio.file.Path file = Paths.get(home+"/Documents/WHS Bell Schedule Output/BellTimes.txt");
+        java.nio.file.Path file = Paths.get(home + "/Documents/WHS Bell Schedule Editor/" + datePicker.getValue().toString() + ".txt");
         try {
             Files.write(file, lines, Charset.forName("UTF-8"));
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        snackbar.show("Saved!",2000);
+        FileWriter fw = null;
+        BufferedWriter bw = null;
+
+        try {
+            fw = new FileWriter("BellTimes.txt", true);
+            bw = new BufferedWriter(fw);
+
+            for(String s: lines){
+                bw.write(s+"\n");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+
+            try {
+                if (bw != null)
+                    bw.close();
+                if (fw != null)
+                    fw.close();
+
+            } catch (IOException ex) {
+                ex.printStackTrace();
+
+            }
+        }
         return true;
+    }
+
+    public void uploadToDropbox(String currentFileLocation, String targetFileName) {
+        try {
+            DropboxClient client = new DropboxClient(KeyTool.getAPIKey());
+            client.uploadFile(currentFileLocation, targetFileName);
+        } catch (Exception e) {
+            snackbar.show("Error uploading to server!", 2000);
+            snackbar.show("Please check your wifi or try uploading manually", 2000);
+            e.printStackTrace();
+        }
+    }
+
+    public void initiateAPIKeyField() {
+        if (apiKeyField == null) {
+            apiKeyField = new JFXTextField();
+            apiKeyField.setPadding(new Insets(10));
+            apiKeyField.setPrefWidth(350);
+            apiKeyField.setPromptText("Paste your Dropbox API key and press enter...");
+            apiKeyField.setOnKeyPressed(keyEvent -> {
+                if (keyEvent.getCode() == KeyCode.ENTER) {
+                    KeyTool.saveAPIKey(apiKeyField.getText());
+                    this.getChildren().remove(apiKeyField);
+                    apiKeyField = null;
+                }
+            });
+            this.getChildren().add(this.getChildren().size() - 2, apiKeyField);
+        }
     }
 }
