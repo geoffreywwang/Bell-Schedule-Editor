@@ -29,6 +29,7 @@ public class MainPane extends VBox {
     private ScrollPane scrollPane;
     private VBox scrollPaneContent;
 
+    //Used for displaying messages
     private JFXSnackbar snackbar;
 
     /**
@@ -73,16 +74,17 @@ public class MainPane extends VBox {
 
         //Initialize the scrollPane
         scrollPane = new ScrollPane(scrollPaneContent);
-        this.setVgrow(scrollPane, Priority.ALWAYS);
+        setVgrow(scrollPane, Priority.ALWAYS);
         scrollPane.setFitToWidth(true);
         scrollPane.setId("scrollPane");
         this.getChildren().add(scrollPane);
 
-        //Create the submit button
+        //Create the default save button
         JFXButton submitButton = new JFXButton("Save...");
         submitButton.setPrefWidth(150);
         submitButton.setId("submitButton");
 
+        //Create the "save to local" button
         JFXButton createLocalButton = new JFXButton("Save as local file");
         createLocalButton.setButtonType(JFXButton.ButtonType.RAISED);
         createLocalButton.getStyleClass().addAll("unselectedButton");
@@ -92,70 +94,81 @@ public class MainPane extends VBox {
             }
         });
 
+        //Create the "save to server" button
         JFXButton createRemoteButton = new JFXButton("Save to server");
         createRemoteButton.setButtonType(JFXButton.ButtonType.RAISED);
         createRemoteButton.getStyleClass().addAll("unselectedButton");
         createRemoteButton.setOnMouseClicked(event -> {
-            try {
-                String apiKey = KeyTool.getAPIKey();
-                if (apiKey == null) {
-                    throw new FileNotFoundException();
-                } else if (apiKey.length() < 10) {
-                    throw new FileNotFoundException();
+            if (!this.getChildren().contains(apiKeyField)) {
+                try {
+                    String apiKey = KeyTool.getAPIKey();
+                    if (apiKey == null) {
+                        throw new FileNotFoundException();
+                    } else if (apiKey.length() < 10) {
+                        throw new FileNotFoundException();
+                    }
+                    if (saveData()) {
+                        uploadToDropbox("BellTimes.txt", "BellTimes.txt");
+                        snackbar.show("Upload successful!", 1000);
+                    }
+                } catch (FileNotFoundException e) {
+                    initiateAPIKeyField();
+                    snackbar.show("Please supply API key and try again...", 1000);
                 }
-                if (saveData()) {
-                    uploadToDropbox("BellTimes.txt", "BellTimes.txt");
-                    snackbar.show("Upload successful!", 1000);
-                }
-            } catch (FileNotFoundException e) {
-                initiateAPIKeyField();
-                snackbar.show("Please supply API key and try again...", 1000);
+            } else {
+                snackbar.show("Please fill out the box above and press enter!", 2000);
             }
-
         });
 
+        //Create the "clear server" button
         JFXButton clearServerButton = new JFXButton("Clear Server");
         clearServerButton.setButtonType(JFXButton.ButtonType.RAISED);
         clearServerButton.getStyleClass().addAll("unselectedButton");
         clearServerButton.setOnMouseClicked(event -> {
-            FileWriter fw = null;
-            BufferedWriter bw = null;
-
-            try {
-                fw = new FileWriter("BellTimes.txt");
-                bw = new BufferedWriter(fw);
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
+            if (!this.getChildren().contains(apiKeyField)) {
+                //Make the BellTimes.txt empty
+                FileWriter fw = null;
+                BufferedWriter bw = null;
                 try {
-                    if (bw != null)
-                        bw.close();
-                    if (fw != null)
-                        fw.close();
-
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-
+                    fw = new FileWriter("BellTimes.txt");
+                    bw = new BufferedWriter(fw);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        if (bw != null) {
+                            bw.close();
+                        }
+                        if (fw != null) {
+                            fw.close();
+                        }
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
                 }
-            }
 
-            try {
-                String apiKey = KeyTool.getAPIKey();
-                if (apiKey == null) {
-                    throw new FileNotFoundException();
-                } else if (apiKey.length() < 10) {
-                    throw new FileNotFoundException();
+                //Push the empty BellTimes.txt to the server
+                try {
+                    String apiKey = KeyTool.getAPIKey();
+                    if (apiKey == null) {
+                        throw new FileNotFoundException();
+                    } else if (apiKey.length() < 10) {
+                        throw new FileNotFoundException();
+                    }
+                    if (saveData()) {
+                        uploadToDropbox("BellTimes.txt", "BellTimes.txt");
+                        snackbar.show("Clear successful!", 1000);
+                    }
+                } catch (FileNotFoundException e) {
+                    initiateAPIKeyField();
+                    snackbar.show("Please supply API key and try again...", 1000);
                 }
-                if (saveData()) {
-                    uploadToDropbox("BellTimes.txt", "BellTimes.txt");
-                    snackbar.show("Clear successful!", 1000);
-                }
-            } catch (FileNotFoundException e) {
-                initiateAPIKeyField();
-                snackbar.show("Please supply API key and try again...", 1000);
+            } else {
+                snackbar.show("Please fill out the box above and press enter!", 2000);
             }
         });
 
+        //Set up the save button dropdown
         JFXNodesList buttons = new JFXNodesList();
         buttons.setSpacing(5);
         buttons.addAnimatedNode(submitButton);
@@ -163,10 +176,13 @@ public class MainPane extends VBox {
         buttons.addAnimatedNode(createRemoteButton);
         buttons.addAnimatedNode(clearServerButton);
 
-
+        //Add the save button dropdown to the node
         this.getChildren().add(buttons);
     }
 
+    /**
+     * Add a new ScheduleLine into the scrollPane
+     */
     private void addLine() {
         JFXButton killButton = new JFXButton("-");
         killButton.setId("removeButton");
@@ -179,49 +195,63 @@ public class MainPane extends VBox {
         scrollPaneContent.getChildren().add(line);
     }
 
+    /**
+     * Save the data to a folder in the documents, as well as appends it to the server BellTimes.txt file
+     *
+     * @return saveSuccessful
+     */
     public boolean saveData() {
+        //Initializes the save file data arraylist
         List<String> lines = new ArrayList<>();
 
+        //Checks if there is a Title
         if (titleField.getText() == null || titleField.getText().equals("")) {
             snackbar.show("Error! Please enter a title!", 2000);
             return false;
         }
 
+        //Checks if there is a Date
         if (datePicker.getValue() == null) {
             snackbar.show("Error! Please enter a date!", 2000);
             return false;
         }
 
+        //Makes and adds the header (specifies which day should display the data)
         lines.add(datePicker.getValue().getMonth().getValue() + "");
         lines.add(datePicker.getValue().getDayOfMonth() + "");
         lines.add(datePicker.getValue().getYear() + "");
         lines.add(scrollPaneContent.getChildren().size() + 2 + "");
 
+        //Adds the Title to the content
         lines.add(titleField.getText() + " ");
         lines.add("---------------");
 
-
+        //Adds all the block/activity names
         for (Node node : scrollPaneContent.getChildren()) {
             ScheduleLine temp = (ScheduleLine) node;
             lines.add(temp.getBlockData());
         }
 
+        //Adds the Date next to the title
         lines.add(datePicker.getValue().toString());
         lines.add("---------------");
 
+        //Adds the "extra content"
         for (Node node : scrollPaneContent.getChildren()) {
             ScheduleLine temp = (ScheduleLine) node;
             lines.add(temp.getExtraData());
         }
 
+        //Finds the user's home path
         String home = System.getenv("HOME");
 
+        //Creates a folder in the Documents if it doesn't already exist
         File documents = new File(home + "/Documents/WHS Bell Schedule Editor");
-
         if (!documents.exists()) {
             documents.mkdir();
         }
 
+        //Save a txt in the folder, labeled by date
         java.nio.file.Path file = Paths.get(home + "/Documents/WHS Bell Schedule Editor/" + datePicker.getValue().toString() + ".txt");
         try {
             Files.write(file, lines, Charset.forName("UTF-8"));
@@ -229,6 +259,7 @@ public class MainPane extends VBox {
             e.printStackTrace();
         }
 
+        //Appends the data onto the server grabbed txt file
         FileWriter fw = null;
         BufferedWriter bw = null;
 
@@ -236,28 +267,32 @@ public class MainPane extends VBox {
             fw = new FileWriter("BellTimes.txt", true);
             bw = new BufferedWriter(fw);
 
-            for(String s: lines){
-                bw.write(s+"\n");
+            for (String s : lines) {
+                bw.write(s + "\n");
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-
             try {
-                if (bw != null)
+                if (bw != null) {
                     bw.close();
-                if (fw != null)
+                }
+                if (fw != null) {
                     fw.close();
-
+                }
             } catch (IOException ex) {
                 ex.printStackTrace();
-
             }
         }
         return true;
     }
 
+    /**
+     * Upload a file to dropbox
+     *
+     * @param currentFileLocation Location of the file one wants to upload
+     * @param targetFileName      Name of file on Dropbox
+     */
     public void uploadToDropbox(String currentFileLocation, String targetFileName) {
         try {
             DropboxClient client = new DropboxClient(KeyTool.getAPIKey());
@@ -269,6 +304,9 @@ public class MainPane extends VBox {
         }
     }
 
+    /**
+     * Create a field for the API key
+     */
     public void initiateAPIKeyField() {
         if (apiKeyField == null) {
             apiKeyField = new JFXTextField();

@@ -4,7 +4,6 @@ import com.dropbox.core.v2.DbxClientV2;
 import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.WriteMode;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,7 +18,7 @@ public class DropboxClient {
     /**
      * Creates a Dropbox client
      *
-     * @param ACCESS_TOKEN
+     * @param ACCESS_TOKEN API key that should not be shared
      */
     public DropboxClient(String ACCESS_TOKEN) {
         DbxRequestConfig config = new DbxRequestConfig("bellScheduleEditor/1.0");
@@ -29,10 +28,10 @@ public class DropboxClient {
     /**
      * Uploads file to dropbox
      *
-     * @param targetFileName
-     * @param currentFileLocation
-     * @throws DbxException
-     * @throws IOException
+     * @param currentFileLocation Location of the file one wants to upload
+     * @param targetFileName Name of file on Dropbox
+     * @throws DbxException Error in uploading file
+     * @throws IOException Error in finding file
      */
     public void uploadFile(String currentFileLocation, String targetFileName) throws DbxException, IOException {
         try (InputStream in = new FileInputStream(currentFileLocation)) {
