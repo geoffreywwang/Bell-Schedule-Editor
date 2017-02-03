@@ -1,11 +1,13 @@
+import com.jfoenix.controls.JFXButton;
+import com.jfoenix.controls.JFXDialog;
 import javafx.application.Application;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -17,7 +19,7 @@ import java.nio.file.StandardCopyOption;
 public class Main extends Application {
 
     //URL of the shared raw txt file
-    public static final String URL = "https://dl.dropboxusercontent.com/s/w1rpxutgcxgb0l7/BellTimes.txt?dl=0";
+    public static final String URL = "https://dl.dropboxusercontent.com/s/a8e3qfwgbfbi0qc/BellTimes.txt?dl=0";
 
     /**
      * Program starts here!
@@ -45,9 +47,9 @@ public class Main extends Application {
         }
 
         //Directs all errors to print to the error log instead of in console
-//        FileOutputStream fos = new FileOutputStream(file);
-//        PrintStream ps = new PrintStream(fos);
-//        System.setErr(ps);
+        FileOutputStream fos = new FileOutputStream(file);
+        PrintStream ps = new PrintStream(fos);
+        System.setErr(ps);
 
         //Creates Keys folder to store API keys if it doesn't already exist
         File keys = new File("Keys");
@@ -90,8 +92,15 @@ public class Main extends Application {
         MainPane mainPane = new MainPane(isConnected);
         mainPane.setPadding(new Insets(10));
 
-        //Create a scene and populate it with mainPane
-        Scene scene = new Scene(mainPane, 700, 720);
+        //Create a scene and populate it with a StackPane with mainPane and a button it it
+        StackPane stackPane = new StackPane();
+        JFXButton aboutButton = new JFXButton();
+        aboutButton.setPadding(new Insets(15));
+        stackPane.getChildren().addAll(mainPane, aboutButton);
+        setupPopup(aboutButton, stackPane);
+        stackPane.setAlignment(Pos.TOP_LEFT);
+
+        Scene scene = new Scene(stackPane, 700, 720);
         mainPane.getStyleClass().addAll("scene");
 
         //Apply CSS Stylesheets
@@ -102,5 +111,20 @@ public class Main extends Application {
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
         primaryStage.show();
+    }
+
+    /**
+     * Creates a popup dialog that displays info
+     */
+    private void setupPopup(JFXButton aboutButton, StackPane stackPane) {
+        aboutButton.setText("About");
+        aboutButton.getStyleClass().addAll("unselectedButton");
+
+        AboutPane aboutPane = new AboutPane();
+        aboutPane.setPadding(new Insets(10));
+        aboutButton.setOnMouseClicked(event -> {
+            JFXDialog dialog = new JFXDialog(stackPane, aboutPane, JFXDialog.DialogTransition.CENTER, true);
+            dialog.show();
+        });
     }
 }
