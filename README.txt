@@ -1,1 +1,1 @@
-This app edits the public file "BellTimes.txt" file used by the WHS Planner app for special Bell Schedules.
+This app edits the public "BellTimes.txt" file (located on Dropbox) used by the WHS Planner app for special Bell Schedules.
