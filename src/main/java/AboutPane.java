@@ -15,8 +15,8 @@ public class AboutPane extends VBox {
         ArrayList<Label> lines = new ArrayList<>();
 
         lines.add(new Label("About:"));
-        lines.add(new Label(" "));
-        lines.add(new Label("This app was created by Geoffrey Wang and is licensed under the MIT License."));
+        lines.add(new Label("\t Version: " + Main.VERSION));
+        lines.add(new Label("\t This app was created by Geoffrey Wang and is licensed under the MIT License."));
         lines.add(new Label(" "));
         lines.add(new Label("The following third party libraries were used in this application:"));
         lines.add(new Label(" "));

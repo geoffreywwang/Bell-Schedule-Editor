@@ -21,6 +21,8 @@ public class Main extends Application {
     //URL of the shared raw txt file
     public static final String URL = "https://dl.dropboxusercontent.com/s/a8e3qfwgbfbi0qc/BellTimes.txt?dl=0";
 
+    public static final String VERSION = "v1.1.1";
+
     /**
      * Program starts here!
      *
