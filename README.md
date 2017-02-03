@@ -5,9 +5,9 @@ This app edits the remote "BellTimes.txt" file used by the WHS Planner app for s
 
 Copyright (c) 2017 [Dropbox][dropbox]
 
-The [Appbundle Maven Plugin][appbundle-plugin] created by [Takashi AOKI][tak.sh] and other contributors licensed under the [Apache License, Version 2.0][apache-license-2.0].
+The [Appbundle Maven Plugin][appbundle-plugin] created by [Takashi AOKI][tak.sh] and other contributors licensed under the [Apache License, Version 2.0][apache-license-2.0]
 
-The [JFoenix][jfoenix] UI library licensed under the [Apache License, Version 2.0][apache-license-2.0].
+The [JFoenix][jfoenix] UI library licensed under the [Apache License, Version 2.0][apache-license-2.0]
 
 [apache-license-2.0]: http://www.apache.org/licenses/LICENSE-2.0.html
 [appbundle-plugin]:https://github.com/federkasten/appbundle-maven-plugin
